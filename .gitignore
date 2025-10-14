@@ -1,0 +1,30 @@
+﻿# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+
+# Data & models (optional, large files)
+*.h5
+*.pkl
+*.pt
+*.ckpt
+*.tflite
+*.onnx
+
+# Logs and cache
+*.log
+logs/
+cache/
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
