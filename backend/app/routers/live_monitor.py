@@ -7,6 +7,7 @@ from app.services.email_service import email_service
 from datetime import datetime
 import asyncio
 from typing import List
+from app.services.mail_service import send_detection_summary
 
 
 router = APIRouter(prefix="/monitor", tags=["Live Monitoring"])
@@ -98,10 +99,18 @@ async def start_live_monitoring(
         "duration_seconds": round(duration_actual, 2),
         "total_samples": len(monitoring_results),
         "botnet_detected": botnet_count,
-        "normal_traffic": normal_count,
+        "normal_detected": normal_count,
         "alerts_sent": alerts_sent,
         "detection_rate": round(botnet_count / len(monitoring_results) * 100, 2) if monitoring_results else 0
     }
+
+    # Always send a summary email (danger or safe)
+    try:
+        if current_user and getattr(current_user, "email", None):
+            send_detection_summary(current_user.email, summary, "monitor")
+    except Exception:
+        # do not fail the request on email error
+        pass
     
     return {
         "summary": summary,

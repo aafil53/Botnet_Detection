@@ -18,6 +18,7 @@ from app.utils.security import get_current_user
 from app.ml_models.loader import model_loader
 from datetime import datetime
 from typing import List
+from app.services.mail_service import send_detection_summary
 
 
 router = APIRouter(prefix="/detect", tags=["Detection"])
@@ -278,6 +279,14 @@ async def batch_detection_from_samples(
             "botnet_percentage": round(botnet_detected / len(samples) * 100, 2) if samples else 0
         }
         
+        # Send summary email to the logged-in user (danger or safe)
+        try:
+            if current_user and getattr(current_user, "email", None):
+                send_detection_summary(current_user.email, summary, "batch")
+        except Exception as _e:
+            # do not fail the request if email sending fails
+            pass
+
         return BatchDetectionResponse(
             total_samples=len(samples),
             predictions=predictions,
