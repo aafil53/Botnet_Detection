@@ -6,10 +6,11 @@ from pydantic import ConfigDict
 class Settings(BaseSettings):
     # App
     APP_NAME: str = "Botnet Detection API"
-    DEBUG: bool = True
+    DEBUG: bool = False
     
-    # MongoDB
+    # MongoDB - Support both DATABASE_URL and MONGODB_URL environment variables
     MONGODB_URL: str = "mongodb://localhost:27017"
+    DATABASE_URL: str = ""
     DATABASE_NAME: str = "botnet_detection"
     
     # JWT
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     
-    # CORS
+    # CORS - Allow localhost for development, add deployed URLs for production
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -33,6 +34,12 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore"  # Ignore extra fields from .env
     )
+    
+    def get_database_url(self) -> str:
+        """Get database URL with priority: DATABASE_URL > MONGODB_URL > default"""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return self.MONGODB_URL
 
 
 settings = Settings()

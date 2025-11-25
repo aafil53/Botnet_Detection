@@ -11,7 +11,8 @@ db_client = None
 async def connect_to_mongo():
     """Connect to MongoDB and initialize Beanie"""
     global db_client
-    db_client = AsyncIOMotorClient(settings.MONGODB_URL)
+    db_url = settings.get_database_url()
+    db_client = AsyncIOMotorClient(db_url)
     database = db_client[settings.DATABASE_NAME]
     
     await init_beanie(
@@ -19,7 +20,7 @@ async def connect_to_mongo():
         document_models=[User, Detection]
     )
     
-    print(f"✅ Connected to MongoDB at {settings.MONGODB_URL}")
+    print(f"✅ Connected to MongoDB")
     print(f"✅ Initialized Beanie with database: {settings.DATABASE_NAME}")
 
 

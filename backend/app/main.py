@@ -30,8 +30,8 @@ app = FastAPI(
 # CORS middleware - Allow all origins for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for testing
-    allow_credentials=False,  # Must be False when allow_origins is "*"
+    allow_origins=settings.ALLOWED_ORIGINS if not settings.DEBUG else ["*"],
+    allow_credentials=False if not settings.DEBUG else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
