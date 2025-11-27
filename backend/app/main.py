@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.config import settings
+from app.config import settings, get_allowed_origins_from_env
 from app.database import connect_to_mongo, close_mongo_connection
 from app.routers import auth  # ADD THIS LINE
 from app.routers import auth, samples
@@ -30,7 +30,7 @@ app = FastAPI(
 # CORS middleware - Allow all origins for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS if not settings.DEBUG else ["*"],
+    allow_origins=(get_allowed_origins_from_env(settings.ALLOWED_ORIGINS) if not settings.DEBUG else ["*"]),
     allow_credentials=False if not settings.DEBUG else True,
     allow_methods=["*"],
     allow_headers=["*"],

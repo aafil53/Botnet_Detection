@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
 from typing import List
 from pydantic import ConfigDict
+import os
+import json
 
 
 class Settings(BaseSettings):
@@ -40,6 +42,30 @@ class Settings(BaseSettings):
         if self.DATABASE_URL:
             return self.DATABASE_URL
         return self.MONGODB_URL
+
+
+def get_allowed_origins_from_env(default: List[str]) -> List[str]:
+    """Return ALLOWED_ORIGINS parsed from the ALLOWED_ORIGINS env var.
+
+    Supported formats:
+    - JSON array: ["https://a", "https://b"]
+    - Comma-separated string: https://a,https://b
+    If not set, returns the provided default list.
+    """
+    raw = os.getenv("ALLOWED_ORIGINS")
+    if not raw:
+        return default
+    raw = raw.strip()
+    # JSON array
+    try:
+        if raw.startswith("["):
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [str(x) for x in parsed]
+    except Exception:
+        pass
+    # Comma-separated
+    return [p.strip() for p in raw.split(",") if p.strip()]
 
 
 settings = Settings()
