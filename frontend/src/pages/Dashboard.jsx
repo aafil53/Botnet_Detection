@@ -1,6 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { FaShieldAlt, FaBrain, FaChartLine, FaClock } from 'react-icons/fa';
-import AnimatedStats from '../components/AnimatedStats';
+const AnimatedStats = lazy(() => import('../components/AnimatedStats'));
+
+// Static education modules (move outside component to avoid recreating on every render)
+const educationModules = [
+	{
+		title: 'Traffic fundamentals',
+		body: 'Review packet captures to understand baseline campus activity before injecting malicious flows.'
+	},
+	{
+		title: 'Model intuition',
+		body: 'Trace how the graph-based classifier reasons about relationships between hosts and protocols.'
+	},
+	{
+		title: 'Threat validation',
+		body: 'Document findings, compare with ground truth labels, and reflect on mitigation strategies.'
+	}
+];
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function Dashboard({ token, api }) {
@@ -16,12 +32,12 @@ export default function Dashboard({ token, api }) {
 	const [rocData, setRocData] = useState([]);
 	const [auc, setAuc] = useState(0.5);
 
-	const adjustAccuracyPercent = (value, sampleCount) => {
+	const adjustAccuracyPercent = useCallback((value, sampleCount) => {
 		if (value === null || value === undefined || value === 0) return null;
 		const base = 2.3; // core deduction to avoid perfect 100%
 		const extra = Math.min((sampleCount || 0) * 0.02, 0.4); // add up to 0.4 more for larger samples
 		return Math.max(0, +(value - (base + extra)).toFixed(1));
-	};
+	}, []);
 
 	useEffect(() => {
 		const lastResults = localStorage.getItem('lastDetectionResults');
@@ -84,7 +100,7 @@ export default function Dashboard({ token, api }) {
 		]);
 	}, [stats.totalPackets, stats.detectedBotnets]);
 
-	const highlightCards = [
+	const highlightCards = useMemo(() => [
 		{
 			label: 'Packets monitored',
 			value: stats.totalPackets.toLocaleString(),
@@ -113,24 +129,53 @@ export default function Dashboard({ token, api }) {
 			trend: stats.avgDetectionTime !== null && stats.avgDetectionTime !== undefined ? 'measured' : 'N/A',
 			icon: <FaClock />
 		}
-	];
+	], [stats, adjustAccuracyPercent]);
 
-	const educationModules = [
-		{
-			title: 'Traffic fundamentals',
-			body: 'Review packet captures to understand baseline campus activity before injecting malicious flows.'
-		},
-		{
-			title: 'Model intuition',
-			body: 'Trace how the graph-based classifier reasons about relationships between hosts and protocols.'
-		},
-		{
-			title: 'Threat validation',
-			body: 'Document findings, compare with ground truth labels, and reflect on mitigation strategies.'
-		}
-	];
+	const memoDetectionBreakdown = useMemo(() => {
+		const total = stats.totalPackets || 1000;
+		const botnet = stats.detectedBotnets || 0;
+		const benign = Math.max(0, total - botnet);
+		const suspicious = Math.floor(total * 0.05);
+		return [
+			{ name: 'Botnet Detected', value: botnet, color: '#FF6B6B' },
+			{ name: 'Benign Traffic', value: benign, color: '#4ECDC4' },
+			{ name: 'Suspicious', value: suspicious, color: '#FFD93D' }
+		];
+	}, [stats.totalPackets, stats.detectedBotnets]);
 
-	return (
+	useEffect(() => {
+		setDetectionBreakdown(memoDetectionBreakdown);
+	}, [memoDetectionBreakdown]);
+
+
+	const formatPieLabel = useCallback(({ name, percent }) => {
+		return `${name}: ${(percent * 100).toFixed(1)}%`;
+	}, []);
+
+
+		// Custom tooltip for the Pie chart to show the hovered slice clearly
+		const PieTooltip = ({ active, payload }) => {
+			if (!active || !payload || !payload.length) return null;
+			const item = payload[0];
+			const total = detectionBreakdown.reduce((s, it) => s + (it.value || 0), 0) || 1;
+			const percent = (item.value / total) * 100;
+			return (
+				<div style={{
+					background: 'rgba(16,18,38,0.95)',
+					border: '1px solid rgba(255,255,255,0.08)',
+					color: '#fff',
+					padding: 8,
+					borderRadius: 6,
+					fontSize: 12
+				}}>
+					<div style={{ fontWeight: 600 }}>{item.name}</div>
+					<div style={{ marginTop: 4 }}>{item.value.toLocaleString()} packets • {percent.toFixed(1)}%</div>
+				</div>
+			);
+		};
+
+
+		return (
 		<div className="dashboard-shell">
 			<div className="dashboard-header">
 				<div>
@@ -156,12 +201,14 @@ export default function Dashboard({ token, api }) {
 				))}
 			</div>
 
-			<AnimatedStats stats={{
-				...stats,
-				modelAccuracy: stats.modelAccuracy > 0 
-					? adjustAccuracyPercent(stats.modelAccuracy, stats.totalPackets) 
-					: 0
-			}} />
+			<Suspense fallback={<div className="loading-small">Loading stats…</div>}>
+				<AnimatedStats stats={{
+					...stats,
+					modelAccuracy: stats.modelAccuracy > 0 
+						? adjustAccuracyPercent(stats.modelAccuracy, stats.totalPackets) 
+						: 0
+				}} />
+			</Suspense>
 
 			<div className="dashboard-panel-grid">
 				<div className="dashboard-panel">
@@ -199,7 +246,7 @@ export default function Dashboard({ token, api }) {
 					</header>
 					<div className="panel-chart">
 						<ResponsiveContainer width="100%" height={320}>
-							<LineChart data={rocData} margin={{ top: 10, right: 20, left: 20, bottom: 10 }}>
+							<LineChart data={rocData} margin={{ top: 10, right: 20, left: 20, bottom: 30 }}>
 								<CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
 								<XAxis
 									dataKey="fpr"
@@ -207,6 +254,8 @@ export default function Dashboard({ token, api }) {
 									domain={[0, 1]}
 									tickCount={6}
 									tick={{ fill: 'rgba(255,255,255,0.7)' }}
+									tickFormatter={(v) => (v * 100).toFixed(0) + '%'}
+									interval="preserveStartEnd"
 									label={{ value: 'False Positive Rate', position: 'bottom', fill: 'rgba(255,255,255,0.6)' }}
 								/>
 								<YAxis
@@ -218,9 +267,9 @@ export default function Dashboard({ token, api }) {
 									label={{ value: 'True Positive Rate', angle: -90, position: 'insideLeft', fill: 'rgba(255,255,255,0.6)' }}
 								/>
 								<Tooltip
-									formatter={(val) => val.toFixed(3)}
+									formatter={(val) => (typeof val === 'number' ? val.toFixed(3) : val)}
 									labelFormatter={() => ''}
-									contentStyle={{ background: 'rgba(16,18,38,0.95)', border: '1px solid rgba(255,255,255,0.1)' }}
+									contentStyle={{ background: 'rgba(16,18,38,0.95)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
 								/>
 								<Line
 									type="monotone"
@@ -232,7 +281,7 @@ export default function Dashboard({ token, api }) {
 								/>
 								<Line
 									type="linear"
-									dataKey={(d) => d.fpr}
+									dataKey="fpr"
 									stroke="#8884d8"
 									strokeDasharray="3 3"
 									dot={false}
@@ -264,7 +313,8 @@ export default function Dashboard({ token, api }) {
 									cx="50%"
 									cy="50%"
 									labelLine={false}
-									label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+									label={formatPieLabel}
+									isAnimationActive={false}
 									outerRadius={100}
 									fill="#8884d8"
 									dataKey="value"
@@ -273,12 +323,7 @@ export default function Dashboard({ token, api }) {
 										<Cell key={`cell-${index}`} fill={entry.color} />
 									))}
 								</Pie>
-								<Tooltip
-									contentStyle={{
-										background: 'rgba(16,18,38,0.95)',
-										border: '1px solid rgba(255,255,255,0.1)'
-									}}
-								/>
+								<Tooltip content={<PieTooltip />} />
 								<Legend />
 							</PieChart>
 						</ResponsiveContainer>
