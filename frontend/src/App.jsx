@@ -186,73 +186,67 @@ export default function App() {
 					<p>AI-Powered Network Security Analysis</p>
 				</header>
 
-				<nav className="navbar">
-					<div className="nav-links">
-						{token ? (
-							<>
-								<Link to="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
-									<FaHome /> Dashboard
-								</Link>
-								<Link to="/detect" className={`nav-link ${isActive('/detect') ? 'active' : ''}`}>
-									<FaShieldAlt /> Detection
-								</Link>
-								<Link to="/monitor" className={`nav-link ${isActive('/monitor') ? 'active' : ''}`}>
-									<FaChartLine /> Live Monitor
-								</Link>
-								<Link to="/dataset" className={`nav-link ${isActive('/dataset') ? 'active' : ''}`}>
-									<FaBrain /> Dataset Explorer
-								</Link>
-								<Link to="/insights" className={`nav-link ${isActive('/insights') ? 'active' : ''}`}>
-									<FaChartLine /> Model Insights
-								</Link>
-								<Link to="/metrics" className={`nav-link ${isActive('/metrics') ? 'active' : ''}`}>
-									<FaChartLine /> Metrics
-								</Link>
-								<Link to="/logs" className={`nav-link ${isActive('/logs') ? 'active' : ''}`}>
-									<FaList /> Logs
-								</Link>
-								<Link to="/reports" className={`nav-link ${isActive('/reports') ? 'active' : ''}`}>
-									<FaChartLine /> Reports
-								</Link>
-								<Link to="/support" className={`nav-link ${isActive('/support') ? 'active' : ''}`}>
-									<FaQuestionCircle /> Support
-								</Link>
-								{token && (
-									<>
-										<ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
-										<ProfileDropdown userEmail={userEmail} onLogout={handleLogout} onSettings={handleSettings} />
-										<button 
-											className="btn danger" 
-											onClick={handleLogout}
-											style={{ 
-												marginLeft: '8px',
-												padding: '10px 16px',
-												fontSize: '0.9rem',
-												display: 'inline-flex',
-												alignItems: 'center',
-												gap: '8px'
-											}}
-										>
-											<FaSignOutAlt />
-											Logout
-										</button>
-									</>
-								)}
-							</>
-						) : (
-							<>
-								<Link to="/login" className={`nav-link ${isActive('/login') ? 'active' : ''}`}>
-									Login
-								</Link>
-								<Link to="/register" className={`nav-link ${isActive('/register') ? 'active' : ''}`}>
-									Register
-								</Link>
-							</>
-						)}
-					</div>
-				</nav>
+			<nav className="navbar">
+				<div className="nav-links">
+					{token ? (
+						<>
+							<Link to="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
+								<FaHome /> Dashboard
+							</Link>
+							<Link to="/detect" className={`nav-link ${isActive('/detect') ? 'active' : ''}`}>
+								<FaShieldAlt /> Detection
+							</Link>
+							<Link to="/monitor" className={`nav-link ${isActive('/monitor') ? 'active' : ''}`}>
+								<FaChartLine /> Live Monitor
+							</Link>
+							<Link to="/dataset" className={`nav-link ${isActive('/dataset') ? 'active' : ''}`}>
+								<FaBrain /> Dataset Explorer
+							</Link>
+							<Link to="/insights" className={`nav-link ${isActive('/insights') ? 'active' : ''}`}>
+								<FaChartLine /> Model Insights
+							</Link>
+							<Link to="/metrics" className={`nav-link ${isActive('/metrics') ? 'active' : ''}`}>
+								<FaChartLine /> Metrics
+							</Link>
+							<Link to="/logs" className={`nav-link ${isActive('/logs') ? 'active' : ''}`}>
+								<FaList /> Logs
+							</Link>
+							<Link to="/reports" className={`nav-link ${isActive('/reports') ? 'active' : ''}`}>
+								<FaChartLine /> Reports
+							</Link>
+							<Link to="/support" className={`nav-link ${isActive('/support') ? 'active' : ''}`}>
+								<FaQuestionCircle /> Support
+							</Link>
+						</>
+					) : (
+						<>
+							<Link to="/login" className={`nav-link ${isActive('/login') ? 'active' : ''}`}>
+								Login
+							</Link>
+							<Link to="/register" className={`nav-link ${isActive('/register') ? 'active' : ''}`}>
+								Register
+							</Link>
+						</>
+					)}
+				</div>
 
-				<Routes>
+				{token && (
+					<div className="nav-actions-wrapper">
+						<div className="nav-actions">
+							<ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+							<ProfileDropdown userEmail={userEmail} onLogout={handleLogout} onSettings={handleSettings} />
+							<button
+								className="btn danger nav-logout"
+								onClick={handleLogout}
+								aria-label="Logout"
+							>
+								<FaSignOutAlt />
+								<span className="logout-text">Logout</span>
+							</button>
+						</div>
+					</div>
+				)}
+			</nav>				<Routes>
 					<Route
 						path="/"
 						element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
